@@ -1,7 +1,9 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import ideaRouter from "./routes/ideaRoutes.js";
+import cookieParser from "cookie-parser";
+import ideaRoutes from "./routes/ideaRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import connectDB from "./config/db.js";
 
@@ -16,9 +18,11 @@ connectDB();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Routes
-app.use("/api/ideas", ideaRouter);
+app.use("/api/ideas", ideaRoutes);
+app.use("/api/auth", authRoutes);
 
 // 404 Fallback
 app.use((req, res, next) => {
