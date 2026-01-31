@@ -6,12 +6,12 @@ import { generateToken } from "../utils/generateToken.js";
 
 const router = express.Router();
 
-// @route           POST api/auth/register
-// @description     Register new user
-// @access          Public
+// @route         POST api/auth/register
+// @description   Register new user
+// @access        Public
 router.post("/register", async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password } = req.body || {};
 
     if (!name || !email || !password) {
       res.status(400);
@@ -27,16 +27,16 @@ router.post("/register", async (req, res, next) => {
 
     const user = await User.create({ name, email, password });
 
-    // Creat Tokens
+    // Create Tokens
     const payload = { userId: user._id.toString() };
     const accessToken = await generateToken(payload, "1m");
-    const refreshtoken = await generateToken(payload, "30m");
+    const refreshToken = await generateToken(payload, "30d");
 
-    // Set refresh token in HTTP-only cookie
-    res.cookie("refreshToken", refreshtoken, {
+    // Set refresh token in HTTP-Only cookie
+    res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
@@ -54,12 +54,12 @@ router.post("/register", async (req, res, next) => {
   }
 });
 
-// @route           POST api/auth/login
-// @description     Authenticate user
-// @access          Public
+// @route         POST api/auth/login
+// @description   Authenticate user
+// @access        Public
 router.post("/login", async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
 
     if (!email || !password) {
       res.status(400);
@@ -82,16 +82,16 @@ router.post("/login", async (req, res, next) => {
       throw new Error("Invalid Credentials");
     }
 
-    // Creat Tokens
+    // Create Tokens
     const payload = { userId: user._id.toString() };
     const accessToken = await generateToken(payload, "1m");
-    const refreshtoken = await generateToken(payload, "30m");
+    const refreshToken = await generateToken(payload, "30d");
 
-    // Set refresh token in HTTP-only cookie
-    res.cookie("refreshToken", refreshtoken, {
+    // Set refresh token in HTTP-Only cookie
+    res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
@@ -109,25 +109,25 @@ router.post("/login", async (req, res, next) => {
   }
 });
 
-// @route           POST api/auth/logout
-// @description     Logout user and clear refresh token
-// @access          Private
+// @route         POST api/auth/logout
+// @description   Logout user and clear refresh token
+// @access        Private
 router.post("/logout", (req, res) => {
   res.clearCookie("refreshToken", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "none",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   });
 
-  res.status(200).json({ message: "Logged out succesfully" });
+  res.status(200).json({ message: "Logged out successfully" });
 });
 
-// @route           POST api/auth/refresh
-// @description     Generate new access token from refresh token
-// @access          Public (Needs valid refresh token in cookie)
+// @route         POST api/auth/refresh
+// @description   Generate new access token from refresh token
+// @access        Public (Needs valid refresh token in cookie)
 router.post("/refresh", async (req, res, next) => {
   try {
-    const token = req.cookies?.refreshtoken;
+    const token = req.cookies?.refreshToken;
     console.log("Refreshing token...");
 
     if (!token) {
@@ -148,8 +148,9 @@ router.post("/refresh", async (req, res, next) => {
       { userId: user._id.toString() },
       "1m",
     );
+
     res.json({
-      accesToken: newAccessToken,
+      accessToken: newAccessToken,
       user: {
         id: user._id,
         name: user.name,
